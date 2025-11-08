@@ -1,7 +1,9 @@
 package nspammer
 
 import (
+	"encoding/csv"
 	"fmt"
+	"os"
 	"testing"
 )
 
@@ -79,4 +81,54 @@ func TestSpamClassifier_Classify(t *testing.T) {
 			}
 		})
 	}
+}
+
+func TestRealDatasetEmails(t *testing.T) {
+	// A small dataset with real email examples
+
+	// load csv /Users/ignacio/nspammer/data/spam_ham_dataset.csv
+	file, err := os.Open("./data/spam_ham_dataset.csv")
+	if err != nil {
+		t.Fatalf("failed to open dataset: %v", err)
+	}
+	defer file.Close()
+
+	reader := csv.NewReader(file)
+	records, err := reader.ReadAll()
+	if err != nil {
+		t.Fatalf("failed to read dataset: %v", err)
+	}
+
+	n := len(records) - 1 // exclude header
+	if n <= 0 {
+		t.Fatalf("dataset is empty")
+	}
+
+	split80 := int(0.8 * float64(n))
+	recordsTrain := records[1 : split80+1]
+	// recordsTest := records[split80+1:]
+
+	trainDataset := make(map[string]bool)
+	for _, record := range recordsTrain {
+		content := record[2]
+		isSpam := record[3] == "1"
+		trainDataset[content] = isSpam
+	}
+
+	classifier := NewSpamClassifier(trainDataset)
+
+	misclassifiedCounter := 0
+	testDataset := records[split80+1:]
+	for _, record := range testDataset {
+		content := record[2]
+		expect := record[3] == "1"
+		got := classifier.Classify(content)
+		if got != expect {
+			misclassifiedCounter++
+			// t.Errorf("misclassified email. Content: %s, got: %v, want: %v", content, prediction, isSpam)
+		}
+	}
+
+	fmt.Println("misclassifiedCounter:", misclassifiedCounter, "in percentage", float64(misclassifiedCounter)/float64(len(trainDataset)))
+
 }
