@@ -53,6 +53,21 @@ func TestSpamClassifier_Classify(t *testing.T) {
 			input: "spam spam2 spam3",
 			want:  true,
 		},
+		{
+			name: "simple negative case",
+			trainingData: map[string]bool{
+				"spam":     true,
+				"spam2":    true,
+				"spam3":    true,
+				"notpsam":  false,
+				"notpsam2": false,
+				"notpsam3": false,
+				"notpsam4": false,
+				"notpsam5": false,
+			},
+			input: "notpsam",
+			want:  false,
+		},
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
